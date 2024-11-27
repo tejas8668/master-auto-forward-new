@@ -4,7 +4,6 @@ import logging
 import os
 from dotenv import load_dotenv
 import json
-import re
 
 load_dotenv('config.env', override=True)
 
@@ -38,51 +37,39 @@ else:
     )
     logger.info("Bot started using Bot Token")
 
-def extract_links(message_text):
-    # Use regular expressions to find links and magnet links in the message
-    link_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
-    magnet_pattern = r'magnet:\?xt=urn:btih:[a-fA-F0-9]+&.*'
-    
-    links = []
-    
-    # Find all links and magnet links in the message
-    matches_link = re.findall(link_pattern, message_text)
-    matches_magnet = re.findall(magnet_pattern, message_text)
-    
-    links.extend(matches_link)
-    links.extend(matches_magnet)
-    
-    return links
+async def check_channel_access():
+    try:
+        for mapping in CHANNEL_MAPPING:
+            source_channel = int(mapping["source"])
+            channel = await app.get_chat(source_channel)
+            logger.info(f"Access to source channel {source_channel}: {channel.title}")
+    except Exception as e:
+        logger.error(f"Error accessing source channel: {e}")
+        raise
 
 @app.on_message(filters.channel)
 async def forward(client, message):
-    # Forwarding the messages to the channels
     try:
         for mapping in CHANNEL_MAPPING:
             source_channel = mapping["source"]
             destinations = mapping["destinations"]
-            prefix = mapping.get("prefix", "")
-            suffix = mapping.get("suffix", "")
 
             if message.chat.id == int(source_channel):
-                source_message = await client.get_messages(int(source_channel), message.id)
-                extracted_links = extract_links(source_message.text)
-
-                if extracted_links:
-                    for link in extracted_links:
-                        modified_message_text = f"{prefix} {link} {suffix}".strip()
-
-                        for destination in destinations:
-                            await client.send_message(chat_id=int(destination), text=modified_message_text)
-                            await asyncio.sleep(5)
-
-                        logger.info("Forwarded a modified message from %s to %s",
-                                    source_channel, destinations)
-                        
-                        # Add a delay before sending the next link
-                        await asyncio.sleep(1)
+                for destination in destinations:
+                    try:
+                        # Forward the message as-is
+                        await client.forward_messages(chat_id=int(destination), from_chat_id=message.chat.id, message_ids=message.id)
+                        logger.info(f"Forwarded message ID {message.id} from {source_channel} to {destination}")
+                        await asyncio.sleep(5)
+                    except Exception as e:
+                        logger.error(f"Error forwarding message {message.id} to {destination}: {e}")
+                        raise
+                await asyncio.sleep(1)
     except Exception as e:
-        logger.exception(e)
+        logger.error(f"Error in forwarding process: {e}")
+        raise
 
 if __name__ == "__main__":
+    app.start()
+    app.loop.run_until_complete(check_channel_access())
     app.run()
