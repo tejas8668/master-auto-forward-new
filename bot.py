@@ -69,7 +69,17 @@ async def forward(client, message):
         logger.error(f"Error in forwarding process: {e}")
         raise
 
+async def manage_connection():
+    try:
+        if app.is_connected:
+            logger.info("Client is already connected, disconnecting...")
+            await app.disconnect()
+        logger.info("Connecting client...")
+        await app.connect()
+        await check_channel_access()
+    except Exception as e:
+        logger.error(f"Error in managing connection: {e}")
+        raise
+
 if __name__ == "__main__":
-    app.start()
-    app.loop.run_until_complete(check_channel_access())
-    app.run()
+    app.run(manage_connection())
