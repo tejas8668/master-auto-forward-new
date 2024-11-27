@@ -83,3 +83,4 @@ async def manage_connection():
 
 if __name__ == "__main__":
     app.run(manage_connection())
+    app.idle()  # Bot ko continuously run karne aur messages sunne ke liye
