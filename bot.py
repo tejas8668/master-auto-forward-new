@@ -83,4 +83,4 @@ async def manage_connection():
 
 if __name__ == "__main__":
     app.run(manage_connection())
-    app.idle()  # Bot ko continuously run karne aur messages sunne ke liye
+    asyncio.get_event_loop().run_forever()  # Bot ko continuously run aur messages sunne ke liye
