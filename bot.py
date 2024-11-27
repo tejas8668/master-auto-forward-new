@@ -63,11 +63,9 @@ async def forward(client, message):
                         await asyncio.sleep(5)
                     except Exception as e:
                         logger.error(f"Error forwarding message {message.id} to {destination}: {e}")
-                        raise
                 await asyncio.sleep(1)
     except Exception as e:
         logger.error(f"Error in forwarding process: {e}")
-        raise
 
 async def manage_connection():
     try:
@@ -83,4 +81,4 @@ async def manage_connection():
 
 if __name__ == "__main__":
     app.run(manage_connection())
-    asyncio.get_event_loop().run_forever()  # Bot ko continuously run aur messages sunne ke liye
+    asyncio.get_event_loop().run_forever()  # Keep the bot running and listening for messages
